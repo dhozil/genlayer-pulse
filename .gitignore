@@ -11,6 +11,7 @@ dist-ssr/
 .vinxi/
 .nitro/
 .tanstack/
+.vercel/
 build/
 
 # --- Environment & secrets ---
