@@ -19,8 +19,11 @@ export const Route = createFileRoute("/app")({
   component: AppPage,
 });
 
+const CATEGORIES = ["all", "general", "dispute", "dao", "prediction", "vibe-check", "ethics"];
+
 function AppPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [category, setCategory] = useState("all");
   const { address } = useWallet();
 
   useEffect(() => {
@@ -51,8 +54,6 @@ function AppPage() {
     load();
     return () => { mounted = false; };
   }, []);
-
-  const finalized = proposals.length;
 
   return (
     <div>
@@ -92,7 +93,6 @@ function AppPage() {
 
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat label="Proposals" value={proposals.length.toString()} />
-            <Stat label="Finalized" value={finalized.toString()} />
             <Stat label="Validators" value={VALIDATORS.length.toString()} />
           </div>
         </div>
@@ -145,6 +145,23 @@ function AppPage() {
           </Link>
         </div>
 
+        {/* Filter bar */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCategory(c)}
+              className={`font-mono text-[10px] uppercase tracking-widest rounded-full border px-3 py-1 transition ${
+                category === c
+                  ? "border-primary text-primary bg-primary/10"
+                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
         {proposals.length === 0 ? (
           <div className="surface-card p-10 text-center">
             <p className="text-muted-foreground">
@@ -159,9 +176,11 @@ function AppPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {proposals.map((p) => (
-              <ProposalCard key={p.id} p={p} />
-            ))}
+            {proposals
+              .filter((p) => category === "all" || p.category === category)
+              .map((p) => (
+                <ProposalCard key={p.id} p={p} />
+              ))}
           </div>
         )}
       </section>
