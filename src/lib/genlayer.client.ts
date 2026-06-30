@@ -6,16 +6,32 @@ function getWindowEthereum() {
   return (window as { ethereum?: unknown }).ethereum;
 }
 
+export async function checkMetaMaskSnaps(eth: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }): Promise<boolean> {
+  try {
+    await eth.request({ method: "wallet_getSnaps" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function getClient() {
   const provider = getWindowEthereum();
-  if (!provider) throw new Error("MetaMask not detected. Please install MetaMask first.");
+  if (!provider) throw new Error("Wallet not detected. Please install MetaMask.");
   const eth = provider as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
+  const hasSnaps = await checkMetaMaskSnaps(eth);
+  if (!hasSnaps) throw new Error(
+    "MetaMask is required. The wallet you're using doesn't support GenLayer Snap. " +
+    "Please install MetaMask from https://metamask.io/download/"
+  );
   const accounts = await eth.request({ method: "eth_requestAccounts" }) as string[];
-  return createClient({
+  const client = createClient({
     chain: chains.studionet,
     provider: eth,
     account: accounts[0] as `0x${string}`,
   });
+  await client.connect("studionet");
+  return client;
 }
 
 function getReadClient() {

@@ -1,12 +1,24 @@
 import { useWallet } from "@/hooks/use-wallet";
 import { useEffect, useState, type ReactNode } from "react";
 
+type WalletState = "loading" | "none" | "unsupported" | "metamask";
+
 export function WalletGate({ children }: { children: ReactNode }) {
   const { address, connecting, connect } = useWallet();
-  const [hasMetaMask, setHasMetaMask] = useState(false);
+  const [state, setState] = useState<WalletState>("loading");
 
   useEffect(() => {
-    setHasMetaMask(!!window.ethereum);
+    async function check() {
+      const eth = (window as { ethereum?: { request?: Function } }).ethereum;
+      if (!eth) { setState("none"); return; }
+      try {
+        await eth.request?.({ method: "wallet_getSnaps" });
+        setState("metamask");
+      } catch {
+        setState("unsupported");
+      }
+    }
+    check();
   }, []);
 
   if (address) return <>{children}</>;
@@ -34,11 +46,15 @@ export function WalletGate({ children }: { children: ReactNode }) {
           Connect your wallet
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          GenLayer Pulse requires a MetaMask wallet to submit proposals and
-          interact with the Intelligent Contract on Studionet.
+          GenLayer Pulse requires MetaMask with the GenLayer Snap to submit
+          proposals on Studionet.
         </p>
 
-        {hasMetaMask ? (
+        {state === "loading" ? (
+          <div className="h-10 flex items-center justify-center">
+            <span className="font-mono text-[10px] text-muted-foreground animate-pulse">checking wallet…</span>
+          </div>
+        ) : state === "metamask" ? (
           <button
             onClick={connect}
             disabled={connecting}
@@ -46,10 +62,28 @@ export function WalletGate({ children }: { children: ReactNode }) {
           >
             {connecting ? "Connecting…" : "Connect MetaMask"}
           </button>
+        ) : state === "unsupported" ? (
+          <div className="space-y-3">
+            <p className="text-xs text-destructive font-semibold">
+              Unsupported wallet detected
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Rabby and other EVM wallets don't support the GenLayer Snap.
+              Please switch to MetaMask.
+            </p>
+            <a
+              href="https://metamask.io/download/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition"
+            >
+              Get MetaMask
+            </a>
+          </div>
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              MetaMask is not installed in your browser.
+              No wallet detected. Please install MetaMask.
             </p>
             <a
               href="https://metamask.io/download/"

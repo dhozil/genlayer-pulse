@@ -64,12 +64,23 @@ function SubmitPage() {
       toast.error("Question must be at least 8 characters.");
       return;
     }
-    const { hasMetaMask } = await import("@/lib/genlayer");
-    if (!hasMetaMask()) {
-      toast.error("MetaMask not detected", {
+    const { checkWallet } = await import("@/lib/genlayer");
+    const wallet = await checkWallet();
+    if (wallet === "none") {
+      toast.error("No wallet detected", {
         description: "Install MetaMask to submit proposals on GenLayer.",
         action: {
           label: "Install",
+          onClick: () => window.open("https://metamask.io/download/", "_blank"),
+        },
+      });
+      return;
+    }
+    if (wallet === "unsupported") {
+      toast.error("MetaMask required", {
+        description: "Your current wallet (e.g. Rabby) doesn't support GenLayer Snap. Please switch to MetaMask.",
+        action: {
+          label: "Get MetaMask",
           onClick: () => window.open("https://metamask.io/download/", "_blank"),
         },
       });

@@ -33,7 +33,14 @@ export const getAllProposals = createIsomorphicFn()
     return g.getAllProposals();
   });
 
-export function hasMetaMask(): boolean {
-  if (typeof window === "undefined") return false;
-  return !!(window as { ethereum?: unknown }).ethereum;
+export async function checkWallet(): Promise<"metamask" | "unsupported" | "none"> {
+  if (typeof window === "undefined") return "none";
+  const eth = (window as { ethereum?: { isMetaMask?: boolean; request?: Function } }).ethereum;
+  if (!eth) return "none";
+  try {
+    await eth.request?.({ method: "wallet_getSnaps" });
+    return "metamask";
+  } catch {
+    return "unsupported";
+  }
 }
